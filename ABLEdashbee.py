@@ -369,7 +369,23 @@ def plot_gender_age_table(df_actual, df_dropout):
 
     except Exception as e:
         return f"An error occurred: {e}"
-        
+
+@st.cache_data
+def plot_gender_age_distribution_visit1_dropout(df_actual, df_dropout):
+    current_date = datetime.now().date()
+    df_visit1_completed = df_actual[df_actual['Visit 1'].dt.date < current_date]
+    df_dropout_filtered = df_dropout[df_dropout['remarks'].str.contains('drop out', na=False)]
+    df_combined = pd.concat([df_visit1_completed, df_dropout_filtered], ignore_index=True, sort=False)
+    df_combined = df_combined[['Study ID', 'Gender', 'age-tier']].drop_duplicates()
+    filtered_df = df_combined[df_combined['Gender'].isin(['Female', 'Male']) & df_combined['age-tier'].isin(['40-50', '51-60'])]
+    pivot_table = pd.pivot_table(filtered_df, values='Study ID', index=['Gender'], columns=['age-tier'], aggfunc='count', fill_value=0, margins=True, margins_name='Total')
+
+    # Convert pivot table to HTML
+    html_string = pivot_table.to_html(classes='table table-striped')
+    return html_string
+
+
+
 def generate_html(fig):
     return plotly.io.to_html(fig, include_plotlyjs='cdn', full_html=True)
 
@@ -394,7 +410,7 @@ def plot_visit_status_section(df_long,current_date):
     return plot_visit_status(df_long)
 
 def plot_gender_age_distribution_section(df_actual, df_dropout,current_date):
-    st.title('Gender and Age-Tier distribution of Actual Participant after Randomisation')
+    st.title('Gender and Age-Tier distribution of Actual Participant after Scheduling')
     st.caption('Following table shows the count of individuals including dropout, by Gender and Age Tier...')
     st.caption(f"Data UTD: {current_date}")
     html_string = plot_gender_age_table(df_actual, df_dropout)
@@ -482,7 +498,9 @@ def run_cumulative_trials_plot():
 
         with gender_age_col:
             plot_gender_age_distribution_section(df_actual, df_dropout, current_date)
-            
+            st.markdown("---")
+            st.title('Distribution of Gender and Age Group among Dropouts and Participants Completed Visit 1')
+            st.markdown(plot_gender_age_distribution_visit1_dropout(df_actual, df_dropout), unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
