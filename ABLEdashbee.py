@@ -24,7 +24,7 @@ def load_screening_data(file_path):
 def load_dropout_data(file_path):
     dropout_df = pd.read_excel(file_path, sheet_name='dropout & withdrawn sheet')
     # Process to identify the visit after which participants dropped out
-    dropout_df['Dropout After'] = np.where(dropout_df['remarks'] == 'drop out', 'withdraw', None)
+    dropout_df['Dropout After'] = np.where(dropout_df['remarks'] == 'drop out after randomisation', 'withdraw', None)
     return dropout_df
 
 #preprocess of actual visit data
