@@ -22,7 +22,7 @@ def load_screening_data(file_path):
 
 @st.cache_data
 def load_dropout_data(file_path):
-    dropout_df = pd.read_excel(file_path, sheet_name='dropout sheet')
+    dropout_df = pd.read_excel(file_path, sheet_name='dropout & withdrawn sheet')
     # Process to identify the visit after which participants dropped out
     dropout_df['Dropout After'] = np.where(dropout_df['remarks'] == 'drop out after randomisation', 'Visit 1', None)
     return dropout_df
@@ -66,7 +66,7 @@ def load_excel_data(uploaded_file):
     with pd.ExcelFile(uploaded_file) as xls:
         df_screening = pd.read_excel(xls, 'Calendared Screening Visit')
         df_actual = pd.read_excel(xls, 'Calendared Study Visit')
-        df_dropout = pd.read_excel(xls, 'dropout sheet')
+        df_dropout = pd.read_excel(xls, 'dropout & withdrawn sheet')
 
         df_screening = convert_to_datetimeRE(df_screening, ['Date for Screening'])
         df_actual = convert_to_datetimeRE(df_actual)  # Default columns are used here
