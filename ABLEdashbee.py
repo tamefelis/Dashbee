@@ -16,16 +16,34 @@ def load_data(file_path):
     return df
 
 def load_screening_data(file_path):
-    df_screen = pd.read_excel(file_path, sheet_name='Calendared Screening Visit') 
+    df_screen = pd.read_excel(file_path, sheet_name='Calendared Screening Visit')
     df_screen = convert_to_datetime(df_screen)
     return df_screen
 
 @st.cache_data
 def load_dropout_data(file_path):
     dropout_df = pd.read_excel(file_path, sheet_name='dropout & withdrawn sheet')
-    # Process to identify the visit after which participants dropped out
-    dropout_df['Dropout After'] = np.where(dropout_df['remarks'] == 'drop out after randomisation', 'withdraw', None)
-    return dropout_df
+
+    # Function to determine 'Dropout After' using match-case
+    def determine_dropout_after(remark):
+        match remark:
+            case 'drop out after randomisation':
+                return 'Visit 1'
+            case 'withdraw after randomisation':
+                return 'Visit 1'
+            case 'withdraw after visit 1':
+                return 'Visit 1'
+            case 'withdraw after visit 2':
+                return 'Visit 2'
+            # Add more cases as needed
+            case _:
+                return None
+
+    # Apply the match-case function to the 'remarks' column
+    dropout_df['Dropout After'] = dropout_df['remarks'].apply(determine_dropout_after)
+    total_dropouts = dropout_df['Dropout After'].notnull().sum()
+    #st.write(f"Total number of dropouts: {total_dropouts}")
+    return dropout_df, total_dropouts
 
 #preprocess of actual visit data
 @st.cache_data
@@ -88,19 +106,19 @@ def create_progress_bar(progression):
     <style>
     .progress-container {{
         width: 100%;
-        background-color: #fff;
-        padding: 3px;
+        background-color: #eee;  /* Light grey background for better visibility */
         border-radius: 20px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        overflow: hidden;  /* Ensures the inner bar does not overflow the container */
     }}
-    
+
     .progress-bar {{
         width: {progression}%;
-        background: linear-gradient(-45deg, #ECF4D6, #9AD0C2, #2D9596, #265073);
+        background: linear-gradient(90deg, #ECF4D6, #9AD0C2, #2D9596, #265073);
         background-size: 200% 200%;
         animation: gradientShift 2s ease infinite;
         text-align: center;
-        line-height: 30px;
+        line-height: 30px;  /* Adjust as needed for text alignment */
         color: black;
         font-weight: bold;
         border-radius: 20px;
@@ -269,8 +287,8 @@ def plot_visit_status(df_long, dropout_df):
     completed_counts = df_long[df_long['Date'].dt.date <= datetime.now().date()].groupby('Visit').size()
 
     # Count dropouts
-    dropout_counts = dropout_df.groupby('Dropout After').size()
-
+    dropout_df_actual = dropout_df[0]  # Assuming the dataframe is the first element of the tuple
+    dropout_counts = dropout_df_actual.groupby('Dropout After').size()
     # Prepare data for the plot
     completed = [completed_counts.get(visit, 0) for visit in visit_types]
     cumulative_dropout_count = 0
@@ -280,7 +298,6 @@ def plot_visit_status(df_long, dropout_df):
     for visit in visit_types:
         # Increase cumulative dropout count if there are dropouts after this visit
         cumulative_dropout_count += dropout_counts.get(visit, 0)
-
         completed_count = completed_counts.get(visit, 0)
         
         # Adjust remaining count so total doesn't exceed max_visits
@@ -289,9 +306,13 @@ def plot_visit_status(df_long, dropout_df):
 
         # Append dropout and remaining data
         dropout_data.append(go.Bar(
-            name=f'Cumulative Dropouts by {visit}', x=[visit], y=[cumulative_dropout_count],
-            marker_color='red',  # Distinct color for dropouts
-            opacity=0.36
+            name=f'Cumulative Dropouts by {visit}',
+            x=[visit],
+            y=[cumulative_dropout_count],
+            marker_color='red',
+            opacity=0.36,
+            text=[f"Total Dropouts after {visit}: {cumulative_dropout_count}"],
+            hoverinfo="text"
         ))
         remaining_data.append(go.Bar(
             name=f'Remaining After {visit}', x=[visit], y=[remaining_count],
@@ -307,7 +328,8 @@ def plot_visit_status(df_long, dropout_df):
     
     current_date = datetime.now().strftime('%Y-%m-%d')
     title_with_subheading = f"Visit Status: Completed vs Remaining<br><sub>Data up-to-date: {current_date}</sub>"
-    
+    # Example of adding hovertext for the dropouts bar
+
     fig.update_layout(
         barmode='stack',
         title=title_with_subheading,
@@ -394,7 +416,8 @@ def plot_visit_status_section(df_long,current_date):
     st.title('Visit Status')
     st.caption('Following chart demonstrates the status of our Visit Status...')
     st.caption(f"Data UTD: {current_date}")
-    visit_status_fig = plot_visit_status(df_long)  # Assign the returned figure to a variable
+    dropout_df = load_dropout_data(file_path)  # Unpack the tuple
+    visit_status_fig = plot_visit_status(df_long, dropout_df)  # Pass the DataFrame, not the tuple
     st.plotly_chart(visit_status_fig)  # Plot the figure
     # Generate HTML string for the "Visit Status" plot
     html_string_status = plotly.io.to_html(visit_status_fig, full_html=True, include_plotlyjs='cdn')
@@ -501,7 +524,7 @@ def run_cumulative_trials_plot():
             st.markdown("---")
             st.title('Distribution of Gender and Age Group among Dropouts and Participants Completed Visit 1')
             st.markdown(plot_gender_age_distribution_visit1_dropout(df_actual, df_dropout), unsafe_allow_html=True)
-
+    
 
 if __name__ == "__main__":
     run_cumulative_trials_plot()
