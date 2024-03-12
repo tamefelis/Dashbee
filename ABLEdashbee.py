@@ -90,7 +90,7 @@ def load_excel_data(uploaded_file):
         df_actual = convert_to_datetimeRE(df_actual)  # Default columns are used here
         return df_screening, df_actual, df_dropout
 
-@st.cache_data
+
 def calculate_progression(df_screening, df_actual, df_dropout):
     current_date = datetime.now()
     completed_screening = df_screening[df_screening['Date for Screening'] < current_date].shape[0]
@@ -101,17 +101,15 @@ def calculate_progression(df_screening, df_actual, df_dropout):
     progression = ((completed_screening + completed_actual + num_dropouts) / total_visits) * 100
     return progression
 
-@st.cache_data
-def create_progress_bar(progression, bar_height=30):
+def create_progress_bar(progression):
     progress_html = f"""
     <style>
     .progress-container {{
         width: 100%;
-        background-color: #eee;
+        background-color: #eee;  /* Light grey background for better visibility */
         border-radius: 20px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        height: {bar_height}px;
+        overflow: hidden;  /* Ensures the inner bar does not overflow the container */
     }}
 
     .progress-bar {{
@@ -120,7 +118,7 @@ def create_progress_bar(progression, bar_height=30):
         background-size: 200% 200%;
         animation: gradientShift 2s ease infinite;
         text-align: center;
-        line-height: {bar_height}px;
+        line-height: 30px;  /* Adjust as needed for text alignment */
         color: black;
         font-weight: bold;
         border-radius: 20px;
@@ -134,10 +132,8 @@ def create_progress_bar(progression, bar_height=30):
     }}
     </style>
 
-    <div class="progress-wrapper">
-        <div class="progress-container">
-            <div class="progress-bar">{progression:.2f}%</div>
-        </div>
+    <div class="progress-container">
+        <div class="progress-bar">{progression:.2f}%</div>
     </div>
     """
     return progress_html
@@ -452,22 +448,9 @@ def run_cumulative_trials_plot():
         df_screening, df_actual, df_dropout = load_excel_data(uploaded_file)
         progression = calculate_progression(df_screening, df_actual, df_dropout)
         st.write("Total Progression of the Study (*Screening* + *Actual Visit*):")
-
-        # Apply custom CSS styles to the progress wrapper
-        st.markdown(f"""
-        <style>
-        .progress-wrapper {{
-            margin-top: -10px;
-            margin-bottom: -10px;
-        }}
-        </style>
-        """, unsafe_allow_html=True)
-
-        progress_bar_html = create_progress_bar(progression, bar_height=40)
-        st.markdown(progress_bar_html, unsafe_allow_html=True)
+        progress_bar_html = create_progress_bar(progression)
+        html(progress_bar_html)
         
-        progress_percentage = calculate_total_progress(df_long, dropout_df)
-
         df = load_data(uploaded_file)
         df_visits = load_data(uploaded_file)
         dropout_df = load_dropout_data(uploaded_file)  # Load dropout data
@@ -476,19 +459,7 @@ def run_cumulative_trials_plot():
         current_date = datetime.now().date()
         df_long = reshape_dataframe(df)
         df_visits_long = reshape_dataframe(df_visits)
-        
-        st.markdown(f"""
-        <style>
-        .progress-wrapper {{
-            margin-top: -10px;
-            margin-bottom: -10px;
-        }}
-        </style>
-        """, unsafe_allow_html=True)
 
-        progress_bar_html = create_progress_bar(progress_percentage, bar_height=40)
-        st.write('Total Actual Visit Progression')
-        st.markdown(progress_bar_html, unsafe_allow_html=True)
         
         # Display the progress bar with dropouts included
         display_progress_bar(df_long, dropout_df, style='tralalala')
@@ -556,5 +527,4 @@ def run_cumulative_trials_plot():
     
 
 if __name__ == "__main__":
-    run_cumulative_trials_plot()
- 
+    run_cumulative_trials_plot() 
