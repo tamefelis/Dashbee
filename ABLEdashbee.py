@@ -130,10 +130,11 @@ def create_progress_bar(progression):
     <style>
     .progress-container {{
         width: 100%;
-        background-color: #eee;  /* Light grey background for better visibility */
+        background-color: #eee;
         border-radius: 20px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        overflow: hidden;  /* Ensures the inner bar does not overflow the container */
+        overflow: hidden;
+        margin-bottom: -10px;  /* Adjust the negative margin to remove the white space */
     }}
 
     .progress-bar {{
@@ -142,7 +143,7 @@ def create_progress_bar(progression):
         background-size: 200% 200%;
         animation: gradientShift 2s ease infinite;
         text-align: center;
-        line-height: 30px;  /* Adjust as needed for text alignment */
+        line-height: 30px;
         color: black;
         font-weight: bold;
         border-radius: 20px;
@@ -161,7 +162,7 @@ def create_progress_bar(progression):
     </div>
     """
     return progress_html
-
+    
 #calculation of total progress
 def calculate_total_progress(df_long, dropout_df):
     current_date = datetime.now().date()
