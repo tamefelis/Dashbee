@@ -48,9 +48,33 @@ def load_dropout_data(file_path):
 #preprocess of actual visit data
 @st.cache_data
 def convert_to_datetime(df):
-    df[['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']] = df[['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']].apply(
-        lambda col: pd.to_datetime(col.astype(str).str.strip(), format='%d/%m/%Y', errors='coerce'))
+    default_date = pd.to_datetime('01/01/1900', format='%d/%m/%Y')  # Default date for invalid or missing dates
+    
+    for col in ['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']:
+        df[col] = pd.to_datetime(df[col], format='%d/%m/%Y', errors='coerce')
+        df[col].fillna(default_date, inplace=True)
+    
     return df
+    
+@st.cache_data
+def display_blank_invalid_dates(df):
+    default_date = pd.to_datetime('01/01/1900', format='%d/%m/%Y')
+    
+    blank_invalid_counts = {}
+    for col in ['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']:
+        blank_invalid_counts[col] = (df[col] == default_date).sum()
+    
+    total_blank_invalid = sum(blank_invalid_counts.values())
+    
+    st.write("Number of blank or invalid dates:")
+    for col, count in blank_invalid_counts.items():
+        st.write(f"{col}: {count}")
+    
+    st.write(f"Total blank or invalid dates: {total_blank_invalid}")
+    
+    if total_blank_invalid > 0:
+        st.write("Please note that blank or invalid dates are considered as 'yet to schedule/reschedule' or 'pending reschedule' dates.")
+
 
 @st.cache_data
 def reshape_dataframe(df):
@@ -463,13 +487,15 @@ def run_cumulative_trials_plot():
         
         # Display the progress bar with dropouts included
         display_progress_bar(df_long, dropout_df, style='tralalala')
-            
+        display_blank_invalid_dates(df_actual)
+   
         st.title('Projection of Current ABLE participant')
         data_filters = {
             f"Full projection<br><sub>Data up-to-date: {current_date}</sub>": df_long,
             "Completed Visits": df_long[df_long['Date'].dt.date <= current_date],
             "Upcoming Visits": df_long[df_long['Date'].dt.date > current_date],
         }
+
         
         # Create columns to display the plots side by side
         cols = st.columns([1, 1, 1])
