@@ -48,33 +48,9 @@ def load_dropout_data(file_path):
 #preprocess of actual visit data
 @st.cache_data
 def convert_to_datetime(df):
-    default_date = pd.to_datetime('01/01/1900', format='%d/%m/%Y')  # Default date for invalid or missing dates
-    
-    for col in ['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']:
-        df[col] = pd.to_datetime(df[col], format='%d/%m/%Y', errors='coerce')
-        df[col].fillna(default_date, inplace=True)
-    
+    df[['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']] = df[['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']].apply(
+        lambda col: pd.to_datetime(col.astype(str).str.strip(), format='%d/%m/%Y', errors='coerce'))
     return df
-    
-@st.cache_data
-def display_blank_invalid_dates(df):
-    default_date = pd.to_datetime('01/01/1900', format='%d/%m/%Y')
-    
-    blank_invalid_counts = {}
-    for col in ['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']:
-        blank_invalid_counts[col] = (df[col] == default_date).sum()
-    
-    total_blank_invalid = sum(blank_invalid_counts.values())
-    
-    st.write("Number of blank or invalid dates:")
-    for col, count in blank_invalid_counts.items():
-        st.write(f"{col}: {count}")
-    
-    st.write(f"Total blank or invalid dates: {total_blank_invalid}")
-    
-    if total_blank_invalid > 0:
-        st.write("Please note that blank or invalid dates are considered as 'yet to schedule/reschedule' or 'pending reschedule' dates.")
-
 
 @st.cache_data
 def reshape_dataframe(df):
@@ -114,7 +90,7 @@ def load_excel_data(uploaded_file):
         df_actual = convert_to_datetimeRE(df_actual)  # Default columns are used here
         return df_screening, df_actual, df_dropout
 
-
+@st.cache_data
 def calculate_progression(df_screening, df_actual, df_dropout):
     current_date = datetime.now()
     completed_screening = df_screening[df_screening['Date for Screening'] < current_date].shape[0]
@@ -125,7 +101,8 @@ def calculate_progression(df_screening, df_actual, df_dropout):
     progression = ((completed_screening + completed_actual + num_dropouts) / total_visits) * 100
     return progression
 
-def create_progress_bar(progression):
+@st.cache_data
+def create_progress_bar(progression, bar_height=30):
     progress_html = f"""
     <style>
     .progress-container {{
@@ -134,6 +111,7 @@ def create_progress_bar(progression):
         border-radius: 20px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         overflow: hidden;
+        height: {bar_height}px;
     }}
 
     .progress-bar {{
@@ -142,7 +120,7 @@ def create_progress_bar(progression):
         background-size: 200% 200%;
         animation: gradientShift 2s ease infinite;
         text-align: center;
-        line-height: 30px;
+        line-height: {bar_height}px;
         color: black;
         font-weight: bold;
         border-radius: 20px;
@@ -163,7 +141,7 @@ def create_progress_bar(progression):
     </div>
     """
     return progress_html
-    
+
 #calculation of total progress
 def calculate_total_progress(df_long, dropout_df):
     current_date = datetime.now().date()
@@ -474,20 +452,22 @@ def run_cumulative_trials_plot():
         df_screening, df_actual, df_dropout = load_excel_data(uploaded_file)
         progression = calculate_progression(df_screening, df_actual, df_dropout)
         st.write("Total Progression of the Study (*Screening* + *Actual Visit*):")
-        progress_bar_html = create_progress_bar(progression)
-    
-    # Apply custom CSS styles to the progress wrapper
+
+        # Apply custom CSS styles to the progress wrapper
         st.markdown(f"""
         <style>
         .progress-wrapper {{
-            margin-top: -20px;
-            margin-bottom: -20px;
+            margin-top: -10px;
+            margin-bottom: -10px;
         }}
         </style>
         """, unsafe_allow_html=True)
-    
+
+        progress_bar_html = create_progress_bar(progression, bar_height=40)
         st.markdown(progress_bar_html, unsafe_allow_html=True)
         
+        progress_percentage = calculate_total_progress(df_long, dropout_df)
+
         df = load_data(uploaded_file)
         df_visits = load_data(uploaded_file)
         dropout_df = load_dropout_data(uploaded_file)  # Load dropout data
@@ -496,19 +476,29 @@ def run_cumulative_trials_plot():
         current_date = datetime.now().date()
         df_long = reshape_dataframe(df)
         df_visits_long = reshape_dataframe(df_visits)
+        
+        st.markdown(f"""
+        <style>
+        .progress-wrapper {{
+            margin-top: -10px;
+            margin-bottom: -10px;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
 
+        progress_bar_html = create_progress_bar(progress_percentage, bar_height=40)
+        st.write('Total Actual Visit Progression')
+        st.markdown(progress_bar_html, unsafe_allow_html=True)
         
         # Display the progress bar with dropouts included
         display_progress_bar(df_long, dropout_df, style='tralalala')
-        display_blank_invalid_dates(df_actual)
-   
+            
         st.title('Projection of Current ABLE participant')
         data_filters = {
             f"Full projection<br><sub>Data up-to-date: {current_date}</sub>": df_long,
             "Completed Visits": df_long[df_long['Date'].dt.date <= current_date],
             "Upcoming Visits": df_long[df_long['Date'].dt.date > current_date],
         }
-
         
         # Create columns to display the plots side by side
         cols = st.columns([1, 1, 1])
@@ -566,4 +556,5 @@ def run_cumulative_trials_plot():
     
 
 if __name__ == "__main__":
-    run_cumulative_trials_plot() 
+    run_cumulative_trials_plot()
+ 
