@@ -134,7 +134,8 @@ def create_progress_bar(progression):
         border-radius: 20px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         overflow: hidden;
-        margin-bottom: -10px;  /* Adjust the negative margin to remove the white space */
+        height: 30px;  /* Set a fixed height for the container */
+        margin-bottom: 0;  /* Remove the bottom margin */
     }}
 
     .progress-bar {{
@@ -474,7 +475,7 @@ def run_cumulative_trials_plot():
         progression = calculate_progression(df_screening, df_actual, df_dropout)
         st.write("Total Progression of the Study (*Screening* + *Actual Visit*):")
         progress_bar_html = create_progress_bar(progression)
-        html(progress_bar_html)
+        st.markdown(progress_bar_html, unsafe_allow_html=True)
         
         df = load_data(uploaded_file)
         df_visits = load_data(uploaded_file)
