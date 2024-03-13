@@ -35,7 +35,8 @@ def load_dropout_data(file_path):
                 return 'Visit 1'
             case 'withdraw after visit 2':
                 return 'Visit 2'
-            # Add more cases as needed
+            case 'withdraw after visit 3':
+                return 'Visit 3'
             case _:
                 return None
 
