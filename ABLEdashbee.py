@@ -384,6 +384,18 @@ def plot_gender_age_distribution_visit1_dropout(df_actual, df_dropout):
 
 def generate_html(fig):
     return plotly.io.to_html(fig, include_plotlyjs='cdn', full_html=True)
+    
+def to_excel(df):
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.save()
+    processed_data = output.getvalue()
+    return processed_data
+
+def download_dataframe_button(df, button_label, file_name):
+    excel_data = to_excel(df)
+    st.download_button(label=button_label, data=excel_data, file_name=file_name, mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 def plot_visit_status_section(df_long, current_date, file_path):
     st.title('Visit Status')
@@ -423,11 +435,6 @@ def run_cumulative_trials_plot():
         df_long = reshape_dataframe(df_actual)
         df_long = add_count_columns(df_long)
         df_long = add_day_of_week(df_long)
-
-        #progression = calculate_progression(df_screening, df_actual, df_dropout)
-        #st.write("Total Progression of the Study (*Screening* + *Actual Visit*):")
-        #progress_bar_html = create_progress_bar(progression)
-        #html(progress_bar_html)
         
         current_date = datetime.now().date()
 
@@ -441,7 +448,7 @@ def run_cumulative_trials_plot():
         }
         
         cols = st.columns([1, 1, 1])
-        with st.expander("Download Plots"):
+        with st.expander("Download Plots and DataFrames"):
             for i, (filter_name, filtered_data) in enumerate(data_filters.items()):
 
                 filtered_data = add_count_columns(filtered_data)
@@ -473,7 +480,9 @@ def run_cumulative_trials_plot():
                     file_name=f'{filter_name}.html',
                     mime='text/html',
                 )
-            
+
+                download_dataframe_button(filtered_data, f"Download {filter_name} Data as Excel", f'{filter_name}.xlsx')
+
         status_col, gender_age_col = st.columns(2)
         
         with status_col:
@@ -486,6 +495,7 @@ def run_cumulative_trials_plot():
             st.markdown("---")
             st.title('Distribution of Gender and Age Group among Dropouts and Participants Completed Visit 1')
             st.markdown(plot_gender_age_distribution_visit1_dropout(df_actual, df_dropout), unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     run_cumulative_trials_plot()
