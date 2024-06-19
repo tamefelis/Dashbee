@@ -384,18 +384,6 @@ def plot_gender_age_distribution_visit1_dropout(df_actual, df_dropout):
 
 def generate_html(fig):
     return plotly.io.to_html(fig, include_plotlyjs='cdn', full_html=True)
-    
-def to_excel(df):
-    output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False, sheet_name='Sheet1')
-    writer.save()
-    processed_data = output.getvalue()
-    return processed_data
-
-def download_dataframe_button(df, button_label, file_name):
-    excel_data = to_excel(df)
-    st.download_button(label=button_label, data=excel_data, file_name=file_name, mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 def plot_visit_status_section(df_long, current_date, file_path):
     st.title('Visit Status')
@@ -422,6 +410,18 @@ def plot_gender_age_distribution_section(df_actual, df_dropout, current_date):
     html_string = plot_gender_age_table(df_actual, df_dropout)
     st.markdown(html_string, unsafe_allow_html=True)
     return plot_gender_age_table(df_actual, df_dropout)
+
+def to_excel(df):
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.save()
+    processed_data = output.getvalue()
+    return processed_data
+
+def download_dataframe_button(df, button_label, file_name):
+    excel_data = to_excel(df)
+    st.download_button(label=button_label, data=excel_data, file_name=file_name, mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 def run_cumulative_trials_plot():
     st.title('ABLE Visits Progression')
@@ -495,7 +495,6 @@ def run_cumulative_trials_plot():
             st.markdown("---")
             st.title('Distribution of Gender and Age Group among Dropouts and Participants Completed Visit 1')
             st.markdown(plot_gender_age_distribution_visit1_dropout(df_actual, df_dropout), unsafe_allow_html=True)
-
 
 if __name__ == "__main__":
     run_cumulative_trials_plot()
