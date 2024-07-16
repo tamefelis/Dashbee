@@ -2,5 +2,5 @@ pandas
 plotly
 numpy
 openpyxl
-streamlit
+streamlit==latest
 xlsxwriter
