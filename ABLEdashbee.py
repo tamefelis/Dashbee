@@ -25,16 +25,18 @@ def load_screening_data(file_path):
 @st.cache_data
 def load_dropout_data(file_path):
     dropout_df = pd.read_excel(file_path, sheet_name='dropout & withdrawn sheet')
+
     def determine_dropout_after(remark):
         match remark:
             case 'withdraw after visit 1':
-                return 'Visit 1'
-            case 'withdraw after visit 2':
                 return 'Visit 2'
-            case 'withdraw after visit 3':
+            case 'withdraw after visit 2':
                 return 'Visit 3'
+            case 'withdraw after visit 3':
+                return 'Visit 4'
             case _:
                 return None
+
     dropout_df['Dropout After'] = dropout_df['remarks'].apply(determine_dropout_after)
     total_dropouts = dropout_df['Dropout After'].notnull().sum()
     return dropout_df, total_dropouts
