@@ -8,7 +8,23 @@ from io import BytesIO
 from streamlit.components.v1 import html
 
 st.set_page_config(layout="wide")
-
+# Add custom CSS for better styling
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #f0f2f6;
+    }
+    .stHeader {
+        background-color: #3B5BA5;
+    }
+    .stBlock {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+</style>
+""", unsafe_allow_html=True)
 # Load data functions
 @st.cache_data
 def load_data(file_path):
