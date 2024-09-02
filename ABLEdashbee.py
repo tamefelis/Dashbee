@@ -8,23 +8,7 @@ from io import BytesIO
 from streamlit.components.v1 import html
 
 st.set_page_config(layout="wide")
-# Add custom CSS for better styling
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #f0f2f6;
-    }
-    .stHeader {
-        background-color: #3B5BA5;
-    }
-    .stBlock {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-</style>
-""", unsafe_allow_html=True)
+
 # Load data functions
 @st.cache_data
 def load_data(file_path):
@@ -102,15 +86,14 @@ def load_excel_data(uploaded_file):
         return df_screening, df_actual, df_dropout
 
 # Add the missing calculate_progression function
-def calculate_progression(df_screening, df_actual, df_dropout):
-    current_date = datetime.now()
-    completed_screening = df_screening[df_screening['Date for Screening'] < current_date].shape[0]
-    completed_actual = df_actual[['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']].apply(lambda x: x < current_date).sum().sum()
-    num_dropouts = df_dropout[df_dropout['remarks'].notnull() & (df_dropout['remarks'] != '')].shape[0]
-
-    total_visits = 480
-    progression = ((completed_screening + completed_actual + num_dropouts) / total_visits) * 100
-    return progression
+# Improved progress calculation function
+def calculate_total_progress(df_actual, df_dropout, target_visits=480):
+    current_date = datetime.now().date()
+    completed_visits = df_actual[df_actual[['Visit 1', 'Visit 2', 'Visit 3', 'Visit 4']].lt(current_date).any(axis=1)].shape[0]
+    dropouts = df_dropout.shape[0]
+    total_visits_counted = completed_visits + dropouts
+    progress_percentage = (total_visits_counted / target_visits) * 100
+    return progress_percentage, total_visits_counted, target_visits, dropouts
 
 # Add the missing create_progress_bar function
 def create_progress_bar(progression):
